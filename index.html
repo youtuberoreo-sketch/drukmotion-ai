@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DrukMotion AI</title>
+<style>
+:root{--bg:#09101d;--card:#121c30;--line:#2b3a58;--text:#f5f7ff;--muted:#9caac4;--a:#8d7cff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#272153,transparent 38%),var(--bg);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:18px 20px;border-bottom:1px solid #ffffff12;display:flex;justify-content:space-between;align-items:center}.logo{font-weight:800;font-size:21px}.logo span{color:#aa9cff}.badge{font-size:11px;color:#c8c0ff;border:1px solid #4a4378;border-radius:99px;padding:5px 9px}
+main{max-width:1050px;margin:30px auto;padding:0 18px}.hero h1{font-size:38px;line-height:1.1;margin:0 0 8px}.hero p{color:var(--muted);margin:0 0 24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:linear-gradient(150deg,#162138,#0f1829);border:1px solid var(--line);border-radius:18px;padding:20px}.card h2{font-size:16px;margin:0 0 14px}.drop{min-height:250px;border:1.5px dashed #536483;border-radius:14px;background:#0b1424;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}.drop img{width:100%;height:100%;max-height:420px;object-fit:contain;display:none}.drop.has img{display:block}.drop.has .copy{display:none}.copy{padding:20px}.icon{font-size:38px;color:#a295ff}.btn{border:0;border-radius:11px;padding:13px 16px;font-weight:750;cursor:pointer;background:linear-gradient(100deg,#7768ee,#9b76ff);color:white}.secondary{background:#202d47;border:1px solid #394966}.choose{margin-top:14px}.field{margin-top:17px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}.field textarea,.field select{width:100%;padding:12px;border:1px solid #344461;background:#0a1322;color:white;border-radius:10px;font:inherit}.field textarea{min-height:105px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.generate{width:100%;margin-top:18px}.preview{height:250px;border-radius:14px;border:1px solid #2b3a58;background:#0a1221;display:flex;align-items:center;justify-content:center;overflow:hidden}.preview video{width:100%;height:100%;object-fit:contain}.empty{text-align:center;color:var(--muted);padding:20px}.play{font-size:40px;color:#9889ff}.status{margin-top:12px;font-size:13px}.status span{color:var(--muted)}.progress{height:6px;background:#25334d;border-radius:99px;overflow:hidden;margin-top:9px}.bar{height:100%;width:0;background:#9b89ff;transition:width .25s}.actions{display:flex;gap:9px;margin-top:12px}.actions .btn{flex:1}.msg{font-size:12px;color:var(--muted);margin-top:12px;min-height:18px}.foot{text-align:center;color:#71819e;font-size:12px;margin:22px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}.hero h1{font-size:31px}.preview{height:230px}}
+</style>
+</head>
+<body>
+<header><div class="logo">✦ DrukMotion <span>AI</span></div><div class="badge">IMAGE → VIDEO</div></header>
+<main>
+<div class="hero"><h1>Bring your images to life.</h1><p>Upload a picture, describe the motion, and generate a real AI video.</p></div>
+<div class="grid">
+<section class="card">
+<h2>1. Image & prompt</h2>
+<div class="drop" id="drop">
+  <div class="copy"><div class="icon">＋</div><b>Choose your image</b><div>PNG, JPG, WEBP · up to 25 MB</div><button class="btn secondary choose" id="choose" type="button">Choose Image</button></div>
+  <img id="imagePreview" alt="Selected image">
+</div>
+<input id="image" type="file" accept="image/*" hidden>
+<div class="field"><label>Animation prompt</label><textarea id="prompt" placeholder="Example: The boy slowly wakes up, opens his eyes, sits up in bed and looks toward the window. Keep the character consistent."></textarea></div>
+<div class="row">
+<div class="field"><label>Duration</label><select id="duration"><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="15">15 seconds</option></select></div>
+<div class="field"><label>Model</label><select disabled><option>Wan 2.6 · 720p</option></select></div>
+</div>
+<button class="btn generate" id="generate">✦ Generate Video</button>
+<div class="msg" id="msg">Generation uses your configured AI provider.</div>
+</section>
+<section class="card">
+<h2>2. Result</h2>
+<div class="preview" id="preview"><div class="empty" id="empty"><div class="play">▶</div><b>Your generated video appears here</b></div><video id="video" controls playsinline style="display:none"></video></div>
+<div class="status"><b id="status">Ready</b> · <span id="status2">No video yet</span></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="actions"><button class="btn secondary" id="download" disabled>↓ Download MP4</button><button class="btn secondary" id="clear">Clear</button></div>
+</section>
+</div>
+<div class="foot">Keep your API key on the server, never in browser code.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let file=null, videoUrl="";
+$("choose").onclick=()=>$("image").click();
+$("drop").onclick=e=>{if(e.target!==$("choose")&&!file)$("image").click()};
+$("image").onchange=()=>{
+  file=$("image").files[0];
+  if(!file)return;
+  $("imagePreview").src=URL.createObjectURL(file);
+  $("drop").classList.add("has");
+  $("msg").textContent="Image selected. Add a motion prompt and generate.";
+};
+$("generate").onclick=async()=>{
+  if(!file)return $("msg").textContent="Choose an image first.";
+  const prompt=$("prompt").value.trim();
+  if(!prompt)return $("msg").textContent="Enter an animation prompt first.";
+  const fd=new FormData();
+  fd.append("image",file); fd.append("prompt",prompt); fd.append("duration",$("duration").value);
+  $("generate").disabled=true;$("download").disabled=true;$("status").textContent="Generating…";$("status2").textContent="AI video generation in progress";$("bar").style.width="30%";$("msg").textContent="Sending your image to the video model…";
+  try{
+    const r=await fetch("/api/generate",{method:"POST",body:fd});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Generation failed");
+    videoUrl=data.videoUrl;
+    $("video").src=videoUrl;$("video").style.display="block";$("empty").style.display="none";
+    $("bar").style.width="100%";$("status").textContent="Video ready";$("status2").textContent="Generated successfully";$("msg").textContent="Your MP4 is ready to preview or download.";
+    $("download").disabled=false;
+  }catch(e){
+    $("bar").style.width="0";$("status").textContent="Generation failed";$("status2").textContent="Please try again";$("msg").textContent=e.message;
+  }finally{$("generate").disabled=false;}
+};
+$("download").onclick=()=>{if(videoUrl){const a=document.createElement("a");a.href=videoUrl;a.download="drukmotion-video.mp4";a.target="_blank";a.click()}};
+$("clear").onclick=()=>{file=null;videoUrl="";$("image").value="";$("imagePreview").removeAttribute("src");$("drop").classList.remove("has");$("prompt").value="";$("video").pause();$("video").removeAttribute("src");$("video").style.display="none";$("empty").style.display="block";$("download").disabled=true;$("bar").style.width="0";$("status").textContent="Ready";$("status2").textContent="No video yet";$("msg").textContent="Choose an image to begin."};
+</script>
+</body>
+</html>
