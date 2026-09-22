@@ -10,6 +10,9 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 }
 });
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "public" });
+});
 
 app.use(express.static("public"));
 
